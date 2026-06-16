@@ -1,0 +1,119 @@
+---
+title: "Discord System Design"
+description: "How Discord serves 19 million concurrent users with real-time voice, video, and text — and why they moved from Golang to Rust."
+date: "2026-06-15"
+tags: ["websockets", "cassandra", "elixir", "rust", "real-time"]
+---
+
+## The Problem
+
+Build a platform that handles:
+- **19 million concurrent users** at peak
+- **Real-time text** in millions of servers/channels
+- **Voice/video** calls for groups
+- **Presence** (online/idle/DND) for everyone in your friend list
+
+---
+
+## What Makes Discord Hard
+
+Unlike WhatsApp (1:1 messages), Discord is **broadcast at scale**:
+- You join a server with 100k members
+- You type a message
+- It has to reach everyone currently online in that channel
+- **Instantly**
+
+This is the fan-out problem — one write, millions of reads.
+
+---
+
+## Architecture Overview
+
+```
+Client (WebSocket) → Gateway → Pub/Sub (Elixir)
+                                    ↓
+                            Channel State (Redis)
+                                    ↓
+                            Message Store (Cassandra)
+                                    ↓
+                            CDN (media attachments)
+```
+
+### Gateway (Elixir)
+
+Discord's gateway is written in **Elixir** (runs on Erlang VM — same as WhatsApp's insight). Each WebSocket connection is a lightweight Elixir process.
+
+Why Elixir?
+- Millions of processes, each tiny
+- **Let it crash** philosophy — supervisor trees restart failed processes
+- Built-in pub/sub via `Phoenix.PubSub`
+
+### Message Fan-out
+
+When you send a message to #general:
+```
+1. Message hits Gateway
+2. Gateway publishes to PubSub topic: "channel:{channel_id}"
+3. All subscribers (online members viewing that channel) receive it
+4. Cassandra write happens async (eventually consistent display)
+```
+
+<Callout type="tip">
+Discord uses **eventually consistent reads** for messages — you might see a message a few ms late. But presence (online/offline) is strongly consistent because getting that wrong breaks trust.
+</Callout>
+
+---
+
+## Voice: WebRTC + SFUs
+
+Text is easy. Voice is hard.
+
+Naive P2P breaks at 10+ people (N² connections). Discord uses **Selective Forwarding Units (SFUs)**:
+
+```
+User A ──→ SFU ──→ User B
+User C ──→     ──→ User D
+              ──→ User E
+```
+
+Each user sends one stream **to the SFU**. SFU decides what to forward to whom. Much more efficient.
+
+Discord wrote their SFU called **WebRTC-Gateway** in Rust for performance.
+
+---
+
+## The Golang → Rust Rewrite
+
+Discord's famous blog post: they rewrote their **Read States** service from Go to Rust.
+
+Read States = tracking which messages each user has read. Cassandra calls every time you open a channel.
+
+**Go problem**: GC pauses every 2 minutes caused latency spikes (99th percentile: 10ms → 250ms spikes)
+
+**Rust solution**: No GC, manual memory management via ownership system. 99th percentile latency: consistently under 1ms.
+
+<Callout type="info">
+This is the real-world proof that Rust's no-GC model isn't just theoretical. At Discord's scale, GC pauses are literally user-visible.
+</Callout>
+
+---
+
+## Presence System
+
+"Is user X online?" seems simple. At Discord's scale it's not.
+
+Every user in a 100k-member server cares about their friends' presence. That's potentially millions of presence updates per second.
+
+Discord's solution: **presence subscriptions**
+- You only get updates for friends you share a server with
+- Presence state lives in Redis (fast, in-memory)
+- Fan-out is limited to your social graph, not entire servers
+
+---
+
+## Key Takeaways
+
+- Elixir/Erlang wins again for connection-heavy, real-time systems
+- SFUs are the standard answer for group voice/video
+- Rust is worth it when GC pauses matter (and at 19M users, they do)
+- Cassandra for message storage, Redis for hot state (presence, typing indicators)

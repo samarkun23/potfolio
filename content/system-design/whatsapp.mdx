@@ -1,0 +1,179 @@
+---
+title: "WhatsApp System Design"
+description: "How WhatsApp handles 100B+ messages/day with end-to-end encryption, minimal servers, and global delivery."
+date: "2026-06-16"
+tags: ["messaging", "websockets", "encryption", "distributed-systems"]
+---
+
+## The Problem
+
+Design a messaging system that can:
+- Handle **100 billion messages per day**
+- Deliver messages in **under 1 second** globally
+- Support **end-to-end encryption**
+- Work on **2G networks** in developing countries
+- **Never lose a message**, even when the recipient is offline
+
+---
+
+## Scale Numbers (Back-of-envelope)
+
+| Metric | Number |
+|--------|--------|
+| Daily Active Users | 2 billion |
+| Messages/day | 100 billion |
+| Messages/second (peak) | ~2.5 million |
+| Media files/day | 4.5 billion |
+| Storage needed | ~50 PB/year |
+
+<Callout type="tip">
+WhatsApp in 2012 ran on **32 engineers** serving 450 million users. The key was Erlang — built for telecom systems, handles millions of concurrent connections with tiny memory per process.
+</Callout>
+
+---
+
+## High-Level Architecture
+
+```
+Client → Load Balancer → Chat Service (Erlang/BEAM)
+                              ↓
+                     Message Queue (Kafka)
+                    /         |          \
+            Storage      Push Service    Media Service
+           (Cassandra)   (FCM/APNs)      (CDN + S3)
+```
+
+---
+
+## Core Components
+
+### 1. Connection Layer
+
+WhatsApp uses **persistent WebSocket connections** — not polling, not HTTP. Each phone keeps a long-lived TCP connection open to a chat server.
+
+Why WebSockets?
+- Server can **push** messages instantly (no client polling)
+- Low overhead — one TCP handshake, then light frames
+- Works even behind NAT firewalls
+
+```
+Client ←— WebSocket —→ Chat Server (FreeBSD + Erlang)
+```
+
+Each Erlang process handles **one connection** and costs only ~2KB RAM. A single server can hold 2 million concurrent connections.
+
+### 2. Message Flow (Online Recipient)
+
+```
+Sender → Chat Server A → Route lookup → Chat Server B → Receiver
+                              ↓
+                       Kafka (log it)
+```
+
+1. Alice sends a message → her chat server receives it
+2. Server looks up Bob's **session server** (consistent hashing)
+3. Message forwarded to Bob's server → pushed down his WebSocket
+4. Bob's client sends **ack** → WhatsApp shows double tick ✓✓
+
+<Callout type="info">
+The **single tick** means the server received it. The **double tick** means the recipient's device received it. Blue double tick = recipient read it. These are separate ack events.
+</Callout>
+
+### 3. Message Flow (Offline Recipient)
+
+If Bob is offline:
+1. Message stored in **Cassandra** (keyed by recipient + timestamp)
+2. Push notification sent via **FCM (Android) / APNs (iOS)**
+3. When Bob reconnects → chat server fetches his pending messages → delivers in order → deletes from queue
+
+```
+Message Store (Cassandra)
+  Key: (user_id, timestamp)
+  Value: encrypted_message_blob
+  TTL: 30 days (then auto-deleted)
+```
+
+### 4. End-to-End Encryption (Signal Protocol)
+
+WhatsApp uses the **Signal Protocol** — same as Signal app.
+
+```
+Alice                           Bob
+  |  — Key Exchange (X3DH) →    |
+  |  ← Key Exchange (X3DH) —    |
+  |                              |
+  | encrypt(msg, shared_secret)  |
+  |————————————————————————————→ |
+  |                decrypt(msg)  |
+```
+
+- **WhatsApp servers never see plaintext** — they only route encrypted blobs
+- Each message uses a **different encryption key** (Double Ratchet algorithm)
+- If one key is compromised, past messages stay safe (**forward secrecy**)
+
+### 5. Media Handling
+
+Images/videos are **never sent through chat servers**:
+
+```
+1. Alice selects photo
+2. Client encrypts it locally → uploads to S3/CDN
+3. Gets back a URL + decryption key
+4. Sends that URL+key to Bob (via normal message flow)
+5. Bob's client downloads from CDN → decrypts locally
+```
+
+This keeps chat servers tiny — they only handle small text messages.
+
+---
+
+## Storage: Why Cassandra?
+
+| Requirement | Why Cassandra |
+|-------------|---------------|
+| Write-heavy (millions/sec) | LSM tree, writes are sequential |
+| Time-series messages | Partition key = user_id, clustering key = timestamp |
+| Global distribution | Multi-region replication built-in |
+| Never goes down | No single point of failure |
+
+Schema (simplified):
+```sql
+CREATE TABLE messages (
+  user_id    UUID,
+  timestamp  TIMEUUID,
+  message    BLOB,        -- always encrypted
+  status     TINYINT,     -- 0=pending, 1=delivered, 2=read
+  PRIMARY KEY (user_id, timestamp)
+) WITH CLUSTERING ORDER BY (timestamp ASC);
+```
+
+---
+
+## Group Messages
+
+Groups are the hardest part. WhatsApp approach:
+
+- **Sender-side fanout**: sender's device encrypts the message **once per recipient** and sends N copies
+- For large groups (up to 1024 members), this shifts load to the client
+- Group metadata stored centrally; message delivery is P2P via servers
+
+<Callout type="warning">
+**Tradeoff**: Large groups are expensive for the sender's device and battery. WhatsApp caps groups at 1024 members partly because of this.
+</Callout>
+
+---
+
+## What I'd Design Differently
+
+1. **Delivery guarantees**: Cassandra TTL means messages can vanish after 30 days if user was offline too long. I'd add a secondary permanent log for enterprise use.
+2. **Read receipts at scale**: Blue ticks require the server to track per-user-per-message state — that's 100B × 2B rows. Better to batch and aggregate.
+3. **Group calls**: WebRTC peer-to-peer breaks at scale. WhatsApp uses Selective Forwarding Units (SFUs) — worth a separate design doc.
+
+---
+
+## Key Takeaways
+
+- **Erlang/BEAM** is genuinely magical for connection-heavy systems
+- **Signal Protocol** solved E2E encryption without sacrificing UX
+- **Cassandra** for message storage is industry standard for good reason
+- The 32-engineer team was possible because they chose boring, proven tech
