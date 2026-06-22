@@ -3,6 +3,7 @@ import createMDX from "@next/mdx";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypePrettyCode from "rehype-pretty-code";
 
 const withMDX = createMDX({
   options: {
@@ -10,6 +11,7 @@ const withMDX = createMDX({
     rehypePlugins: [
       rehypeSlug,
       [rehypeAutolinkHeadings, { behavior: "wrap" }],
+      rehypePrettyCode,
     ],
   },
 });
@@ -24,6 +26,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "ghchart.rshah.org" },
     ],
   },
+  experimental: {
+    mdxRs: true
+  }
 };
 
 export default withMDX(nextConfig);
