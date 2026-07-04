@@ -37,7 +37,7 @@ This is done using a **presigned URL** — a special, time-limited URL that S3 g
 
 ### The Flow
 
-<Image src="../../public/image_upload_flow.png" alt="Instagram upload flow" />
+![Presigned URL upload flow](/image_upload_flow.png)
 1. **Client requests an upload** — it tells the Image Upload Service, "I want to upload a photo."
 2. **Service generates a random Image ID** — e.g. `8a7c2f...`. This becomes the object key in storage: `s3://images/8a7c2f.jpg`.
 3. **Service asks the S3 SDK to generate a presigned URL** for that exact path, with a short expiry (e.g. 5 minutes):
