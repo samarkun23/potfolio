@@ -37,8 +37,7 @@ This is done using a **presigned URL** — a special, time-limited URL that S3 g
 
 ### The Flow
 
-<Image src="/blog/image-upload/presigned-flow.png" alt="Presigned URL upload flow" />
-
+<Image src="../../public/image_upload_flow.png" alt="Instagram upload flow" />
 1. **Client requests an upload** — it tells the Image Upload Service, "I want to upload a photo."
 2. **Service generates a random Image ID** — e.g. `8a7c2f...`. This becomes the object key in storage: `s3://images/8a7c2f.jpg`.
 3. **Service asks the S3 SDK to generate a presigned URL** for that exact path, with a short expiry (e.g. 5 minutes):
@@ -96,7 +95,6 @@ Now, changing CDN providers or storage backends is a one-line config change — 
 
 ## Separation of Concerns: Image Service vs. Post Service
 
-<Image src="/blog/image-upload/full-flow.png" alt="Full system flow with Image Service, Post Service, Kafka, and CDN" />
 
 Putting it all together, the end-to-end flow looks like this:
 
