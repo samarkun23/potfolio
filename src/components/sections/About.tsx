@@ -28,9 +28,9 @@ export default function About({ skills }: Props) {
         <p className="text-sm text-text-secondary leading-relaxed">
           I&apos;m a{" "}
           <span className="text-text font-medium">self-taught developer</span>{" "}
-          who started with nothing and built everything — from CRUD apps to
-          real-time WebSocket systems to low-latency Rust engines. I care about
-          writing software that actually works under pressure.
+           Recently, I've been exploring systems programming with Rust and C++, real-time
+  applications using WebSockets, and Web3 infrastructure. I'm always building,
+  learning, and pushing myself through challenging projects. 
         </p>
         <p className="text-sm text-text-secondary leading-relaxed">
           My current focus is on{" "}

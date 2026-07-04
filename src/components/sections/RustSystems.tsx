@@ -20,7 +20,7 @@ export default function RustSystems({ systems }: { systems: RustSystem[] }) {
 
   return (
     <section id="rust" ref={ref} className="py-14 border-b border-border">
-      <SectionHeader label="Rust Systems" />
+      <SectionHeader label="Trading Systems" />
 
       <p className="text-xs text-muted-text font-mono mt-2 mb-6">
         <span className="text-accent">▸</span> High-performance infrastructure written in Rust

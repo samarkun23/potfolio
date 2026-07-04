@@ -24,7 +24,7 @@ export default function Projects({ projects }: { projects: Project[] }) {
 
   return (
     <section id="projects" ref={ref} className="py-14 border-b border-border">
-      <SectionHeader label="Featured Projects" />
+      <SectionHeader label="Full stack projects" />
 
       <div className="mt-6 space-y-4">
         {projects.map((project, i) => (

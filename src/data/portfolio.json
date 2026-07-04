@@ -90,7 +90,7 @@
   "techStack": {
     "Frontend": ["React", "Next.js", "TypeScript", "Tailwind CSS"],
     "Backend": ["Node.js", "Express", "PostgreSQL", "MongoDB"],
-    "Systems": ["Rust", "Tokio", "WebSockets", "Redis"],
+    "Systems": ["Rust", "Tokio", "WebSockets", "Redis", "C++", "Conan", "Boost"],
     "DevOps": ["Docker", "Linux", "Git", "Nginx"]
   }
 }
