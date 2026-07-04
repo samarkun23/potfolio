@@ -31,7 +31,7 @@
       "tech": ["Next.js", "PostgreSQL", "Prisma", "Webhooks"],
       "github": "https://github.com/samarkun23/fluxo",
       "demo": "https://youtube.com",
-      "screenshot": "/images/fluxo.png",
+      "screenshot": "/fluxo.png",
       "status": "Live"
     },
     {
@@ -41,7 +41,7 @@
       "tech": ["Next.js", "WebSockets", "Node.js"],
       "github": "https://github.com/samarkun23/Chess-app",
       "demo": "https://youtube.com",
-      "screenshot": "/images/chess.png",
+      "screenshot": "/chess.png",
       "status": "Live"
     },
     {
