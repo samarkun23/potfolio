@@ -51,7 +51,7 @@
       "tech": ["Canvas API", "WebSockets", "Next.js"],
       "github": "https://github.com/samarkun23/Excellidraw",
       "demo": "./boarddemo.mp4",
-      "screenshot": "/images/sketchdraw.png",
+      "screenshot": "/sketchdraw1.png",
       "status": "Live"
     }
   ],
