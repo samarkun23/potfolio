@@ -1,118 +1,139 @@
 import Link from "next/link";
 import { getAllNotes } from "@/lib/mdx";
 import type { Metadata } from "next";
+import { ArrowLeft, ArrowUpRight, BookOpen, Clock } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "System Design Notes — Samar Kun",
+  title: "Architectural Scrolls (全書) — Samar Kun",
   description:
     "Architecture studies and system design breakdowns of large-scale distributed systems.",
 };
 
-const icons: Record<string, string> = {
-  whatsapp: "💬",
-  discord: "🎮",
-  youtube: "▶",
-  uber: "🚗",
-  trading: "📈",
-  twitter: "𝕏",
-  netflix: "▶",
-  airbnb: "🏠",
+const kanjiSlugs: Record<string, string> = {
+  whatsapp: "通信",
+  discord: "集会",
+  loadbalancer: "平衡",
+  image_upload_service: "画像",
 };
 
 export default function SystemDesignIndex() {
   const notes = getAllNotes();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden zen-grid-pattern">
+      <div className="zen-mist-top" />
+
       {/* Back nav */}
-      <div className="border-b border-border sticky top-0 bg-background/90 backdrop-blur-md z-10">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+      <div className="border-b border-white/5 sticky top-0 bg-[#08090a]/85 backdrop-blur-md z-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link
             href="/"
-            className="font-mono text-xs text-muted-text hover:text-text transition-colors flex items-center gap-1.5"
+            className="font-mono text-xs text-muted-text hover:text-white transition-colors flex items-center gap-1.5 group"
           >
-            ← home
+            <ArrowLeft size={13} className="group-hover:-translate-x-1 transition-transform" />
+            <span>~/home</span>
           </Link>
-          <span className="text-border">/</span>
-          <span className="font-mono text-xs text-accent">system-design</span>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-crimson" />
+            <span className="font-serif text-xs text-crimson font-medium">全書</span>
+            <span className="font-mono text-xs text-blade">architectural-scrolls</span>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-14">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14 relative z-10">
         {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="font-mono text-xs text-accent tracking-wider uppercase">
-              [ System Design ]
+        <div className="mb-12">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="kanji-seal text-xs px-2 py-0.5 font-serif font-bold">
+              構
             </span>
-            <div className="flex-1 h-px bg-border" />
+            <span className="font-mono text-xs text-blade font-medium tracking-widest uppercase">
+              Architectural Scrolls
+            </span>
+            <div className="flex-1 h-px bg-gradient-to-r from-white/15 to-transparent" />
           </div>
-          <p className="text-sm text-text-secondary leading-relaxed">
-            Architecture breakdowns of large-scale distributed systems.
-            Written as I study — raw, honest, and in my own words.
+
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-white tracking-wide mb-3">
+            Dissecting High-Scale Systems
+          </h1>
+
+          <p className="text-sm sm:text-base text-text-secondary leading-relaxed max-w-2xl">
+            In-depth architecture studies and distributed systems breakdowns. Written with zero fluff — focusing on failure modes, data flows, and sub-second scale.
           </p>
-          <div className="flex items-center gap-2 mt-3">
-            <span className="font-mono text-xs text-muted-text">
-              {notes.length} note{notes.length !== 1 ? "s" : ""}
-            </span>
-            <span className="text-border">·</span>
-            <span className="font-mono text-xs text-muted-text">
-              growing over time
-            </span>
+
+          <div className="flex items-center gap-2 mt-4 font-mono text-xs text-muted-text">
+            <span className="text-accent">{notes.length} scrolls available</span>
+            <span>·</span>
+            <span>Expanded continuously</span>
           </div>
         </div>
 
         {/* Notes list */}
         {notes.length === 0 ? (
-          <div className="rounded-lg border border-border bg-surface p-8 text-center">
+          <div className="rounded-xl border border-white/10 blade-card p-8 text-center">
             <p className="font-mono text-xs text-muted-text">
-              <span className="text-accent">$</span> no notes yet — add{" "}
-              <span className="text-text">content/system-design/whatsapp.mdx</span>
+              <span className="text-crimson">$</span> no scrolls yet
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {notes.map((note) => (
               <Link
                 key={note.slug}
                 href={`/system-design/${note.slug}`}
-                className="group flex items-center justify-between p-4 rounded-lg border border-border bg-surface hover:border-muted transition-all duration-200"
+                className="blade-card group flex items-center justify-between p-5 rounded-xl border border-white/10 hover:border-white/25 transition-all duration-300"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-base flex-shrink-0">
-                    {icons[note.slug] ?? "📄"}
+                <div className="flex items-start gap-4 min-w-0">
+                  <span className="w-8 h-8 rounded-lg bg-crimson/10 border border-crimson/30 flex items-center justify-center font-serif text-xs font-bold text-crimson flex-shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                    {kanjiSlugs[note.slug] ?? "書"}
                   </span>
                   <div className="min-w-0">
-                    <div className="font-mono text-sm font-medium text-text group-hover:text-accent transition-colors truncate">
+                    <h2 className="font-serif text-base sm:text-lg font-bold text-white group-hover:text-blade transition-colors">
                       {note.title}
-                    </div>
-                    <div className="font-mono text-xs text-muted-text mt-0.5 truncate">
+                    </h2>
+                    <p className="text-xs sm:text-sm text-text-secondary mt-1 leading-relaxed line-clamp-2">
                       {note.description}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {note.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="font-mono text-[10px] px-2 py-0.5 rounded bg-white/[0.03] border border-white/5 text-muted-text"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-                  <span className="font-mono text-xs text-muted hidden sm:block">
-                    {note.readingTime}
+
+                <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                  <span className="font-mono text-xs text-muted-text hidden sm:flex items-center gap-1">
+                    <Clock size={11} />
+                    <span>{note.readingTime}</span>
                   </span>
-                  <span className="font-mono text-xs text-muted-text group-hover:text-text transition-colors">
-                    →
-                  </span>
+                  <ArrowUpRight
+                    size={16}
+                    className="text-muted-text group-hover:text-crimson group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
+                  />
                 </div>
               </Link>
             ))}
           </div>
         )}
 
-        {/* Tags cloud if any */}
+        {/* Tags cloud */}
         {notes.length > 0 && (
-          <div className="mt-10 pt-8 border-t border-border">
-            <p className="font-mono text-xs text-muted-text mb-3">topics</p>
+          <div className="mt-14 pt-8 border-t border-white/10">
+            <p className="font-mono text-xs text-muted-text mb-3 uppercase tracking-wider">
+              Study Topics
+            </p>
             <div className="flex flex-wrap gap-2">
               {Array.from(new Set(notes.flatMap((n) => n.tags))).map((tag) => (
                 <span
                   key={tag}
-                  className="font-mono text-xs px-2 py-0.5 rounded bg-border text-muted-text"
+                  className="font-mono text-xs px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.02] text-blade"
                 >
                   {tag}
                 </span>
